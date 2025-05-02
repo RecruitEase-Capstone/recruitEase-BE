@@ -1,0 +1,15 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package
+      value: authentication_service/internal/pb/v1
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ./
+  - remote: buf.build/grpc/go
+    out: ./
