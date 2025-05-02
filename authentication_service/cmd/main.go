@@ -12,6 +12,8 @@ import (
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/repository"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/usecase"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/jwt"
+	log_utils "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/log"
+	logging_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	protovalidate_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -52,10 +54,15 @@ func main() {
 		log.Fatal().Err(err).Str("service", service).Msg("failed to initialize protovalidate")
 	}
 
-	interceptor := protovalidate_middleware.UnaryServerInterceptor(validator)
+	logger, opts := log_utils.InterceptorLogger(zerolog.New(os.Stderr))
+
+	protovalidateInterceptor := protovalidate_middleware.UnaryServerInterceptor(validator)
+
+	loggingInterceptor := logging_middleware.UnaryServerInterceptor(logger, opts...)
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor),
+		grpc.ChainUnaryInterceptor(protovalidateInterceptor),
+		grpc.ChainUnaryInterceptor(loggingInterceptor),
 	)
 
 	authRepo := repository.NewAuthRepository(db)
