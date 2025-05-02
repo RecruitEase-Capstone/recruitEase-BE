@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+service AuthenticationService {
+    rpc UserRegister (RegisterRequest) returns (RegisterResponse);
+    rpc UserLogin (LoginRequest) returns (LoginResponse);
+}
+
+message RegisterRequest {
+    string name = 1[ 
+        (buf.validate.field).string.min_len = 5,
+        (buf.validate.field).string.max_len = 100
+    ];
+    string email = 2[
+        (buf.validate.field).string.email = true,
+        (buf.validate.field).string.min_len = 15,
+        (buf.validate.field).string.max_len = 100
+        ];
+    string password = 3[
+        (buf.validate.field).string.min_len = 8,
+        (buf.validate.field).string.max_len = 155
+    ];
+    string confirm_password = 4;
+}
+
+message RegisterResponse {
+    string id = 1;
+    string name = 2;
+    string email = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+message LoginRequest {
+    string email = 1[
+        (buf.validate.field).string.email = true,
+        (buf.validate.field).string.min_len = 1
+    ];
+    string password = 2[(buf.validate.field).string.min_len = 1];
+}
+
+message LoginResponse {
+    string jwt_token = 1;
+}

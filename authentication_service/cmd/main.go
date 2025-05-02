@@ -5,12 +5,14 @@ import (
 	"net"
 	"os"
 
+	"buf.build/go/protovalidate"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/db"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/handler"
-	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb"
+	pb "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb/v1"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/repository"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/usecase"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/jwt"
+	protovalidate_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -45,11 +47,20 @@ func main() {
 			Str("service", service).Msg("cannot init jwt")
 	}
 
-	grpcServer := grpc.NewServer()
+	validator, err := protovalidate.New()
+	if err != nil {
+		log.Fatal().Err(err).Str("service", service).Msg("failed to initialize protovalidate")
+	}
+
+	interceptor := protovalidate_middleware.UnaryServerInterceptor(validator)
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor),
+	)
 
 	authRepo := repository.NewAuthRepository(db)
 	authUsecase := usecase.NewAuthUsecase(authRepo, jwtPkg)
-	authHanlder := handler.NewAuthHandler(authUsecase)
+	authHanlder := handler.NewAuthHandler(authUsecase, validator)
 
 	pb.RegisterAuthenticationServiceServer(grpcServer, authHanlder)
 

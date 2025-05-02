@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/model"
-	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb"
+	pb "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb/v1"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/repository"
 	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/error"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/jwt"
