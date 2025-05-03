@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/model"
-	pb "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb/v1"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/repository"
 	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/error"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/jwt"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/regex"
+	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/timestamppb"

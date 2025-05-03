@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"buf.build/go/protovalidate"
-	pb "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/pb/v1"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/usecase"
 	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/internal/utils/error"
+	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

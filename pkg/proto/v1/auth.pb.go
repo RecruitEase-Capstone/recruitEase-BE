@@ -289,8 +289,8 @@ const file_proto_v1_auth_proto_rawDesc = "" +
 	"\tjwt_token\x18\x01 \x01(\tR\bjwtToken2\x84\x01\n" +
 	"\x15AuthenticationService\x129\n" +
 	"\fUserRegister\x12\x13.v1.RegisterRequest\x1a\x14.v1.RegisterResponse\x120\n" +
-	"\tUserLogin\x12\x10.v1.LoginRequest\x1a\x11.v1.LoginResponseBb\n" +
-	"\x06com.v1B\tAuthProtoP\x01Z%authentication_service/internal/pb/v1\xa2\x02\x03VXX\xaa\x02\x02V1\xca\x02\x02V1\xe2\x02\x0eV1\\GPBMetadata\xea\x02\x02V1b\x06proto3"
+	"\tUserLogin\x12\x10.v1.LoginRequest\x1a\x11.v1.LoginResponseBE\n" +
+	"\x06com.v1B\tAuthProtoP\x01Z\bproto/v1\xa2\x02\x03VXX\xaa\x02\x02V1\xca\x02\x02V1\xe2\x02\x0eV1\\GPBMetadata\xea\x02\x02V1b\x06proto3"
 
 var (
 	file_proto_v1_auth_proto_rawDescOnce sync.Once
