@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
 	"buf.build/go/protovalidate"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/authentication_service/db"
@@ -21,7 +26,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const service = "authentication service"
+const (
+	service      = "authentication service"
+	shutdownTime = 30 * time.Second
+)
 
 func main() {
 	godotenv.Load()
@@ -71,8 +79,55 @@ func main() {
 
 	pb.RegisterAuthenticationServiceServer(grpcServer, authHanlder)
 
-	log.Info().Msgf("%s running on %s", service, AuthPort)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatal().Err(err).Str("service", service).Msgf("failed to serve %s", service)
+	gs := gracefullyShutdown(grpcServer)
+
+	go func() {
+		log.Info().Msgf("%s running on %s", service, AuthPort)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatal().Err(err).Str("service", service).Msgf("failed to serve %s", service)
+		}
+	}()
+
+	gs()
+
+	log.Info().Msgf("%s exited gracefully", service)
+}
+
+func gracefullyShutdown(s *grpc.Server) func() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	return func() {
+		sig := <-c
+
+		log.Info().Msgf("received shutdown signal: %v", sig)
+
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTime)
+		defer cancel()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			log.Info().Msgf("Gracefully stopping %s... ", service)
+
+			stopped := make(chan struct{})
+			go func() {
+				s.GracefulStop()
+				close(stopped)
+			}()
+
+			select {
+			case <-stopped:
+				log.Info().Msg("All connections completed gracefully")
+			case <-ctx.Done():
+				log.Info().Msg("Shutdown time reached, forcing stop")
+				s.Stop()
+			}
+		}()
+
+		wg.Wait()
 	}
 }
