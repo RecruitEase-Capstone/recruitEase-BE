@@ -1,3 +1,5 @@
 .env
 go.work
 go.work.sum
+
+minio_volume/data

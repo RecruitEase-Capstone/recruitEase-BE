@@ -3,7 +3,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package
-      value: proto/v1
+      value: pkg/proto/v1
   disable:
     - file_option: go_package
       module: buf.build/bufbuild/protovalidate

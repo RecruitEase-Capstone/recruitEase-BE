@@ -21,5 +21,19 @@ services:
       timeout: 10s
       retries: 5
 
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio-recruitease
+    ports:
+      - ${MINIO_API_PORT}:${MINIO_API_PORT}
+      - ${MINIO_WEBUI_PORT}:${MINIO_WEBUI_PORT}
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio_volume/data:/data
+    command: server /data --console-address ":${MINIO_WEBUI_PORT}"
+    user: "${UID}:${GID}"
+
 volumes:
   postgres_data_capstone:

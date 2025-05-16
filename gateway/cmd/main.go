@@ -11,9 +11,14 @@ import (
 	"time"
 
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/handler"
+	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/middleware"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/usecase"
+	minioUtils "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/minio"
+	"github.com/RecruitEase-Capstone/recruitEase-BE/pkg/jwt"
 	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
 	"github.com/joho/godotenv"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -32,21 +37,53 @@ func main() {
 
 	GatewayPort := os.Getenv("GATEWAY_SERVICE_PORT")
 
-	AuthPort := os.Getenv("AUTH_SERVICE_PORT")
-	AuthHost := os.Getenv("AUTH_SERVICE_HOST")
-	AuthUrl := fmt.Sprintf("%s:%s", AuthHost, AuthPort)
+	authPort := os.Getenv("AUTH_SERVICE_PORT")
+	authHost := os.Getenv("AUTH_SERVICE_HOST")
+	authUrl := fmt.Sprintf("%s:%s", authHost, authPort)
 
-	conn, err := grpc.NewClient(AuthUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	mlPort := os.Getenv("ML_SERVICE_PORT")
+	mlHost := os.Getenv("ML_SERVICE_HOST")
+	mlUrl := fmt.Sprintf("%s:%s", mlHost, mlPort)
+
+	minioEndpoint := fmt.Sprintf("localhost:%s", os.Getenv("MINIO_API_PORT"))
+	minioAccessKeyID := os.Getenv("MINIO_ROOT_USER")
+	minioSecretAccessKey := os.Getenv("MINIO_ROOT_PASSWORD")
+	JwtKey := os.Getenv("JWT_SECRET_KEY")
+	JwtExpired := os.Getenv("JWT_EXPIRED")
+	bucketName := os.Getenv("MINIO_BUCKET_NAME")
+
+	authConn, err := grpc.NewClient(authUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal().Str("service", service).
-			AnErr("failed to create a grpc client", err)
+			AnErr("failed to create a authentication service grpc client", err)
 	}
-	defer conn.Close()
+	defer authConn.Close()
 
-	client := pb.NewAuthenticationServiceClient(conn)
+	mlConn, err := grpc.NewClient(mlUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal().Str("service", service).
+			AnErr("failed to create a ml service grpc client", err)
+	}
+	defer mlConn.Close()
 
-	authUsecase := usecase.NewAuthClient(client)
+	authClient := pb.NewAuthenticationServiceClient(authConn)
+	batchProcessorClient := pb.NewCVProcessorServiceClient(mlConn)
+
+	minioClient, err := minio.New(minioEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(minioAccessKeyID, minioSecretAccessKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		log.Fatal().Str("service", service).AnErr("failed to create a minio client", err)
+	}
+
+	minio := minioUtils.NewMinio(minioClient)
+
+	authUsecase := usecase.NewAuthClient(authClient)
 	authHandler := handler.NewAuthHandler(authUsecase)
+
+	batchProcessorUsecase := usecase.NewBatchPdfProcessing(minio, batchProcessorClient, bucketName)
+	batchProcessorHandler := handler.NewBatchPdfProcessingHandler(batchProcessorUsecase)
 
 	r := http.NewServeMux()
 
@@ -55,7 +92,17 @@ func main() {
 		Handler: r,
 	}
 
+	jwtPkg, err := jwt.NewJwt(JwtKey, JwtExpired)
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Str("service", service).Msg("cannot init jwt")
+	}
+
+	middleware := middleware.NewMiddleware(jwtPkg)
+
 	handler.AuthRoutes(r, authHandler)
+	handler.BatchProcessingRoutes(r, batchProcessorHandler, middleware)
 
 	gs := gracefullyShutdown(server)
 
