@@ -64,6 +64,8 @@ services:
       context: .
       dockerfile: gateway/Dockerfile
     container_name: recruitease-api-gateway
+    ports:
+      - "${GATEWAY_SERVICE_PORT}:${GATEWAY_SERVICE_PORT}"
     depends_on:
       - authentication_service
     environment:
