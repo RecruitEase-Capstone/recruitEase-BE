@@ -45,7 +45,11 @@ func main() {
 	mlHost := os.Getenv("ML_SERVICE_HOST")
 	mlUrl := fmt.Sprintf("%s:%s", mlHost, mlPort)
 
-	minioEndpoint := fmt.Sprintf("localhost:%s", os.Getenv("MINIO_API_PORT"))
+	minioHost := os.Getenv("MINIO_API_HOST")
+	minioPort := os.Getenv("MINIO_API_PORT")
+	minioEndpoint := fmt.Sprintf("%s:%s", minioHost, minioPort)
+	log.Info().Str("minio url", minioEndpoint)
+
 	minioAccessKeyID := os.Getenv("MINIO_ROOT_USER")
 	minioSecretAccessKey := os.Getenv("MINIO_ROOT_PASSWORD")
 	JwtKey := os.Getenv("JWT_SECRET_KEY")

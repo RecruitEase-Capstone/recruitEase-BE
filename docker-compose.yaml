@@ -11,6 +11,8 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data_capstone:/var/lib/postgresql/data
+    networks:
+      - internal
     healthcheck:
       test:
         [
@@ -34,6 +36,57 @@ services:
       - ./minio_volume/data:/data
     command: server /data --console-address ":${MINIO_WEBUI_PORT}"
     user: "${UID}:${GID}"
+    networks:
+      - internal
+
+  authentication_service:
+    build:
+      context: .                
+      dockerfile: authentication_service/Dockerfile
+    container_name: recruitease-authentication-service
+    depends_on:
+      authdb:
+        condition: service_healthy
+    environment:
+      - AUTH_SERVICE_PORT=${AUTH_SERVICE_PORT}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_EXPIRED=${JWT_EXPIRED}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_CONTAINER_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+    networks:
+      - internal
+
+  api_gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: recruitease-api-gateway
+    depends_on:
+      - authentication_service
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_EXPIRED=${JWT_EXPIRED}
+      - AUTH_SERVICE_HOST=${AUTH_SERVICE_HOST}
+      - AUTH_SERVICE_PORT=${AUTH_SERVICE_PORT}
+      - ML_SERVICE_HOST=${ML_SERVICE_HOST}
+      - ML_SERVICE_PORT=${ML_SERVICE_PORT}
+      - GATEWAY_SERVICE_PORT=${GATEWAY_SERVICE_PORT}
+      - MINIO_API_HOST=${MINIO_API_HOST}
+      - MINIO_API_PORT=${MINIO_API_PORT}
+      - MINIO_WEBUI_PORT=${MINIO_WEBUI_PORT}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+    name: recruitease-network
 
 volumes:
   postgres_data_capstone:
