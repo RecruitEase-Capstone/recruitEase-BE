@@ -26,7 +26,8 @@ type BatchPDFProcessRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BucketName    string                 `protobuf:"bytes,1,opt,name=bucket_name,json=bucketName,proto3" json:"bucket_name,omitempty"`
 	BatchId       string                 `protobuf:"bytes,2,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
-	PdfFiles      []*PDFFileInfo         `protobuf:"bytes,3,rep,name=pdf_files,json=pdfFiles,proto3" json:"pdf_files,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PdfFiles      []*PDFFileInfo         `protobuf:"bytes,4,rep,name=pdf_files,json=pdfFiles,proto3" json:"pdf_files,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -71,6 +72,13 @@ func (x *BatchPDFProcessRequest) GetBucketName() string {
 func (x *BatchPDFProcessRequest) GetBatchId() string {
 	if x != nil {
 		return x.BatchId
+	}
+	return ""
+}
+
+func (x *BatchPDFProcessRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -370,16 +378,61 @@ func (x *CVPrediction) GetEmailAddress() []string {
 	return nil
 }
 
+type FetchSummarizedPdfHistoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FetchSummarizedPdfHistoryRequest) Reset() {
+	*x = FetchSummarizedPdfHistoryRequest{}
+	mi := &file_pkg_proto_v1_cv_processor_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FetchSummarizedPdfHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FetchSummarizedPdfHistoryRequest) ProtoMessage() {}
+
+func (x *FetchSummarizedPdfHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_v1_cv_processor_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FetchSummarizedPdfHistoryRequest.ProtoReflect.Descriptor instead.
+func (*FetchSummarizedPdfHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_v1_cv_processor_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *FetchSummarizedPdfHistoryRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 var File_pkg_proto_v1_cv_processor_proto protoreflect.FileDescriptor
 
 const file_pkg_proto_v1_cv_processor_proto_rawDesc = "" +
 	"\n" +
-	"\x1fpkg/proto/v1/cv_processor.proto\x12\x02v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x82\x01\n" +
+	"\x1fpkg/proto/v1/cv_processor.proto\x12\x02v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9b\x01\n" +
 	"\x16BatchPDFProcessRequest\x12\x1f\n" +
 	"\vbucket_name\x18\x01 \x01(\tR\n" +
 	"bucketName\x12\x19\n" +
-	"\bbatch_id\x18\x02 \x01(\tR\abatchId\x12,\n" +
-	"\tpdf_files\x18\x03 \x03(\v2\x0f.v1.PDFFileInfoR\bpdfFiles\"{\n" +
+	"\bbatch_id\x18\x02 \x01(\tR\abatchId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12,\n" +
+	"\tpdf_files\x18\x04 \x03(\v2\x0f.v1.PDFFileInfoR\bpdfFiles\"{\n" +
 	"\vPDFFileInfo\x12\x1b\n" +
 	"\tfile_name\x18\x01 \x01(\tR\bfileName\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x03R\x04size\x12;\n" +
@@ -406,9 +459,12 @@ const file_pkg_proto_v1_cv_processor_proto_rawDesc = "" +
 	"\x06skills\x18\b \x03(\tR\x06skills\x12\x1a\n" +
 	"\blocation\x18\t \x03(\tR\blocation\x12#\n" +
 	"\remail_address\x18\n" +
-	" \x03(\tR\femailAddress2`\n" +
+	" \x03(\tR\femailAddress\";\n" +
+	" FetchSummarizedPdfHistoryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId2\xc0\x01\n" +
 	"\x12CVProcessorService\x12J\n" +
-	"\x0fProcessBatchPDF\x12\x1a.v1.BatchPDFProcessRequest\x1a\x1b.v1.BatchPDFProcessResponseBP\n" +
+	"\x0fProcessBatchPDF\x12\x1a.v1.BatchPDFProcessRequest\x1a\x1b.v1.BatchPDFProcessResponse\x12^\n" +
+	"\x19FetchSummarizedPdfHistory\x12$.v1.FetchSummarizedPdfHistoryRequest\x1a\x1b.v1.BatchPDFProcessResponseBP\n" +
 	"\x06com.v1B\x10CvProcessorProtoP\x01Z\fpkg/proto/v1\xa2\x02\x03VXX\xaa\x02\x02V1\xca\x02\x02V1\xe2\x02\x0eV1\\GPBMetadata\xea\x02\x02V1b\x06proto3"
 
 var (
@@ -423,24 +479,27 @@ func file_pkg_proto_v1_cv_processor_proto_rawDescGZIP() []byte {
 	return file_pkg_proto_v1_cv_processor_proto_rawDescData
 }
 
-var file_pkg_proto_v1_cv_processor_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_pkg_proto_v1_cv_processor_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pkg_proto_v1_cv_processor_proto_goTypes = []any{
-	(*BatchPDFProcessRequest)(nil),  // 0: v1.BatchPDFProcessRequest
-	(*PDFFileInfo)(nil),             // 1: v1.PDFFileInfo
-	(*BatchPDFProcessResponse)(nil), // 2: v1.BatchPDFProcessResponse
-	(*PredictionResult)(nil),        // 3: v1.PredictionResult
-	(*CVPrediction)(nil),            // 4: v1.CVPrediction
-	(*timestamppb.Timestamp)(nil),   // 5: google.protobuf.Timestamp
+	(*BatchPDFProcessRequest)(nil),           // 0: v1.BatchPDFProcessRequest
+	(*PDFFileInfo)(nil),                      // 1: v1.PDFFileInfo
+	(*BatchPDFProcessResponse)(nil),          // 2: v1.BatchPDFProcessResponse
+	(*PredictionResult)(nil),                 // 3: v1.PredictionResult
+	(*CVPrediction)(nil),                     // 4: v1.CVPrediction
+	(*FetchSummarizedPdfHistoryRequest)(nil), // 5: v1.FetchSummarizedPdfHistoryRequest
+	(*timestamppb.Timestamp)(nil),            // 6: google.protobuf.Timestamp
 }
 var file_pkg_proto_v1_cv_processor_proto_depIdxs = []int32{
 	1, // 0: v1.BatchPDFProcessRequest.pdf_files:type_name -> v1.PDFFileInfo
-	5, // 1: v1.PDFFileInfo.uploaded_at:type_name -> google.protobuf.Timestamp
+	6, // 1: v1.PDFFileInfo.uploaded_at:type_name -> google.protobuf.Timestamp
 	3, // 2: v1.BatchPDFProcessResponse.predictions:type_name -> v1.PredictionResult
 	4, // 3: v1.PredictionResult.prediction:type_name -> v1.CVPrediction
 	0, // 4: v1.CVProcessorService.ProcessBatchPDF:input_type -> v1.BatchPDFProcessRequest
-	2, // 5: v1.CVProcessorService.ProcessBatchPDF:output_type -> v1.BatchPDFProcessResponse
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
+	5, // 5: v1.CVProcessorService.FetchSummarizedPdfHistory:input_type -> v1.FetchSummarizedPdfHistoryRequest
+	2, // 6: v1.CVProcessorService.ProcessBatchPDF:output_type -> v1.BatchPDFProcessResponse
+	2, // 7: v1.CVProcessorService.FetchSummarizedPdfHistory:output_type -> v1.BatchPDFProcessResponse
+	6, // [6:8] is the sub-list for method output_type
+	4, // [4:6] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
@@ -457,7 +516,7 @@ func file_pkg_proto_v1_cv_processor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_v1_cv_processor_proto_rawDesc), len(file_pkg_proto_v1_cv_processor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,6 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/rs/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -81,6 +82,13 @@ func main() {
 		log.Fatal().Str("service", service).AnErr("failed to create a minio client", err)
 	}
 
+	jwtPkg, err := jwt.NewJwt(JwtKey, JwtExpired)
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Str("service", service).Msg("cannot init jwt")
+	}
+
 	minio := minioUtils.NewMinio(minioClient)
 
 	authUsecase := usecase.NewAuthClient(authClient)
@@ -89,24 +97,27 @@ func main() {
 	batchProcessorUsecase := usecase.NewBatchPdfProcessing(minio, batchProcessorClient, bucketName)
 	batchProcessorHandler := handler.NewBatchPdfProcessingHandler(batchProcessorUsecase)
 
-	r := http.NewServeMux()
+	middleware := middleware.NewMiddleware(jwtPkg)
+
+	mux := http.NewServeMux()
+
+	handler.AuthRoutes(mux, authHandler)
+	handler.BatchProcessingRoutes(mux, batchProcessorHandler, middleware)
+
+	corsOptions := cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With", "Origin"},
+		AllowCredentials: true,
+		MaxAge:           86400,
+	}
+
+	corsMiddleware := cors.New(corsOptions).Handler(mux)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", GatewayPort),
-		Handler: r,
+		Handler: corsMiddleware,
 	}
-
-	jwtPkg, err := jwt.NewJwt(JwtKey, JwtExpired)
-	if err != nil {
-		log.Fatal().
-			Err(err).
-			Str("service", service).Msg("cannot init jwt")
-	}
-
-	middleware := middleware.NewMiddleware(jwtPkg)
-
-	handler.AuthRoutes(r, authHandler)
-	handler.BatchProcessingRoutes(r, batchProcessorHandler, middleware)
 
 	gs := gracefullyShutdown(server)
 

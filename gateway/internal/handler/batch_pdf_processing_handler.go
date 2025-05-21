@@ -7,6 +7,7 @@ import (
 
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/middleware"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/usecase"
+	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/response"
 )
 
@@ -24,6 +25,7 @@ func BatchProcessingRoutes(router *http.ServeMux,
 	handler *BatchPdfProcessingHandler,
 	middleware middleware.IMiddleware) {
 	router.Handle("/api/cv/summarize", middleware.JwtAuthMiddleware(http.HandlerFunc(handler.HandleBatchUpload)))
+	router.Handle("/api/cv/history", middleware.JwtAuthMiddleware(http.HandlerFunc(handler.FetchSummarizedPdfHistory)))
 }
 
 func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +33,8 @@ func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r 
 		response.FailedResponse(w, http.StatusMethodNotAllowed, "http method not allowed", nil)
 		return
 	}
+
+	userId, err := utils.GetUserIdFromContext(w, r)
 
 	if err := r.ParseMultipartForm(10); err != nil {
 		response.FailedResponse(w, http.StatusBadRequest, "file size exceeds 10 mb", nil)
@@ -52,11 +56,27 @@ func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r 
 		return
 	}
 
-	res, err := br.usecase.UnzipAndUpload(r.Context(), zipBytes)
+	res, err := br.usecase.UnzipAndUpload(r.Context(), zipBytes, userId)
 	if err != nil {
 		response.FailedResponse(w, http.StatusInternalServerError, "failed to unzip and upload batch pdf`s", err.Error())
 		return
 	}
 
 	response.SuccessResponse(w, http.StatusOK, "successfully summary batch cv", res)
+}
+
+func (br *BatchPdfProcessingHandler) FetchSummarizedPdfHistory(w http.ResponseWriter, r *http.Request) {
+	userId, err := utils.GetUserIdFromContext(w, r)
+	if err != nil {
+		response.FailedResponse(w, http.StatusUnauthorized, "failed to get user id", err.Error())
+		return
+	}
+
+	res, err := br.usecase.FetchSummarizedPdfHistory(r.Context(), userId)
+	if err != nil {
+		response.FailedResponse(w, http.StatusInternalServerError, "failed to fetch summarized pdf history", err.Error())
+		return
+	}
+
+	response.SuccessResponse(w, http.StatusOK, "successfully fetch summarized pdf history", res)
 }

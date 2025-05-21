@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/model"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/minio"
 	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
 	"github.com/google/uuid"
@@ -17,7 +18,8 @@ import (
 )
 
 type IBatchPdfProcessingUsecase interface {
-	UnzipAndUpload(ctx context.Context, zipBytes []byte) (*pb.BatchPDFProcessResponse, error)
+	UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) (*model.CVSummarizeResponse, error)
+	FetchSummarizedPdfHistory(ctx context.Context, userId string) (*model.CVSummarizeResponse, error)
 }
 
 type BatchPdfProcessingUsecase struct {
@@ -32,7 +34,7 @@ func NewBatchPdfProcessing(minio minio.IMinio,
 	return &BatchPdfProcessingUsecase{minio: minio, client: client, bucketName: bucketName}
 }
 
-func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipBytes []byte) (*pb.BatchPDFProcessResponse, error) {
+func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) (*model.CVSummarizeResponse, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 	if err != nil {
 		return nil, err
@@ -61,13 +63,31 @@ func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipByte
 	req := &pb.BatchPDFProcessRequest{
 		BucketName: bu.bucketName,
 		BatchId:    batchId,
+		UserId:     userId,
 		PdfFiles:   UploadedFiles,
 	}
 
-	res, err := bu.client.ProcessBatchPDF(ctx, req)
+	grpcRes, err := bu.client.ProcessBatchPDF(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+
+	res := bu.mappingGrpcResponse(grpcRes)
+
+	return res, nil
+}
+
+func (bu *BatchPdfProcessingUsecase) FetchSummarizedPdfHistory(ctx context.Context, userId string) (*model.CVSummarizeResponse, error) {
+	req := &pb.FetchSummarizedPdfHistoryRequest{
+		UserId: userId,
+	}
+
+	grpcRes, err := bu.client.FetchSummarizedPdfHistory(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	res := bu.mappingGrpcResponse(grpcRes)
 
 	return res, nil
 }
@@ -103,6 +123,28 @@ func (bu *BatchPdfProcessingUsecase) processPDF(ctx context.Context, zipFile *zi
 		Size:       info.Size,
 		UploadedAt: timestamppb.New(time.Now()),
 	}, nil
+}
+
+func (bu *BatchPdfProcessingUsecase) mappingGrpcResponse(res *pb.BatchPDFProcessResponse) *model.CVSummarizeResponse {
+	response := &model.CVSummarizeResponse{}
+
+	for _, pred := range res.Predictions {
+		if pred.Prediction == nil {
+			continue
+		}
+		response.Name = append(response.Name, pred.Prediction.Name...)
+		response.CollegeName = append(response.CollegeName, pred.Prediction.CollegeName...)
+		response.Degree = append(response.Degree, pred.Prediction.Degree...)
+		response.GraduationYear = append(response.GraduationYear, pred.Prediction.GraduationYear...)
+		response.YearsOfExperience = append(response.YearsOfExperience, pred.Prediction.YearsOfExperience...)
+		response.CompaniesWorkedAt = append(response.CompaniesWorkedAt, pred.Prediction.CompaniesWorkedAt...)
+		response.Designation = append(response.Designation, pred.Prediction.Designation...)
+		response.Skills = append(response.Skills, pred.Prediction.Skills...)
+		response.Location = append(response.Location, pred.Prediction.Location...)
+		response.EmailAddress = append(response.EmailAddress, pred.Prediction.EmailAddress...)
+	}
+
+	return response
 }
 
 func (bu *BatchPdfProcessingUsecase) generateUniqueFileName(originalName string) string {

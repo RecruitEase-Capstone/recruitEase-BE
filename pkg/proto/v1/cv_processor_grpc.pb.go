@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CVProcessorService_ProcessBatchPDF_FullMethodName = "/v1.CVProcessorService/ProcessBatchPDF"
+	CVProcessorService_ProcessBatchPDF_FullMethodName           = "/v1.CVProcessorService/ProcessBatchPDF"
+	CVProcessorService_FetchSummarizedPdfHistory_FullMethodName = "/v1.CVProcessorService/FetchSummarizedPdfHistory"
 )
 
 // CVProcessorServiceClient is the client API for CVProcessorService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CVProcessorServiceClient interface {
 	ProcessBatchPDF(ctx context.Context, in *BatchPDFProcessRequest, opts ...grpc.CallOption) (*BatchPDFProcessResponse, error)
+	FetchSummarizedPdfHistory(ctx context.Context, in *FetchSummarizedPdfHistoryRequest, opts ...grpc.CallOption) (*BatchPDFProcessResponse, error)
 }
 
 type cVProcessorServiceClient struct {
@@ -47,11 +49,22 @@ func (c *cVProcessorServiceClient) ProcessBatchPDF(ctx context.Context, in *Batc
 	return out, nil
 }
 
+func (c *cVProcessorServiceClient) FetchSummarizedPdfHistory(ctx context.Context, in *FetchSummarizedPdfHistoryRequest, opts ...grpc.CallOption) (*BatchPDFProcessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchPDFProcessResponse)
+	err := c.cc.Invoke(ctx, CVProcessorService_FetchSummarizedPdfHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CVProcessorServiceServer is the server API for CVProcessorService service.
 // All implementations must embed UnimplementedCVProcessorServiceServer
 // for forward compatibility.
 type CVProcessorServiceServer interface {
 	ProcessBatchPDF(context.Context, *BatchPDFProcessRequest) (*BatchPDFProcessResponse, error)
+	FetchSummarizedPdfHistory(context.Context, *FetchSummarizedPdfHistoryRequest) (*BatchPDFProcessResponse, error)
 	mustEmbedUnimplementedCVProcessorServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedCVProcessorServiceServer struct{}
 
 func (UnimplementedCVProcessorServiceServer) ProcessBatchPDF(context.Context, *BatchPDFProcessRequest) (*BatchPDFProcessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessBatchPDF not implemented")
+}
+func (UnimplementedCVProcessorServiceServer) FetchSummarizedPdfHistory(context.Context, *FetchSummarizedPdfHistoryRequest) (*BatchPDFProcessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchSummarizedPdfHistory not implemented")
 }
 func (UnimplementedCVProcessorServiceServer) mustEmbedUnimplementedCVProcessorServiceServer() {}
 func (UnimplementedCVProcessorServiceServer) testEmbeddedByValue()                            {}
@@ -104,6 +120,24 @@ func _CVProcessorService_ProcessBatchPDF_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CVProcessorService_FetchSummarizedPdfHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchSummarizedPdfHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CVProcessorServiceServer).FetchSummarizedPdfHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CVProcessorService_FetchSummarizedPdfHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CVProcessorServiceServer).FetchSummarizedPdfHistory(ctx, req.(*FetchSummarizedPdfHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CVProcessorService_ServiceDesc is the grpc.ServiceDesc for CVProcessorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var CVProcessorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProcessBatchPDF",
 			Handler:    _CVProcessorService_ProcessBatchPDF_Handler,
+		},
+		{
+			MethodName: "FetchSummarizedPdfHistory",
+			Handler:    _CVProcessorService_FetchSummarizedPdfHistory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
