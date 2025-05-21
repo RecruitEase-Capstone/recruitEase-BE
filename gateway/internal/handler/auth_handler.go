@@ -56,5 +56,5 @@ func (ah *AuthHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SuccessResponse(w, http.StatusCreated, "successfully login to account", res)
+	response.SuccessResponse(w, http.StatusOK, "successfully login to account", res)
 }
