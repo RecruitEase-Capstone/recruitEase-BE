@@ -10,9 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/config"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/handler"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/middleware"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/usecase"
+	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils"
 	minioUtils "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/minio"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/pkg/jwt"
 	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
@@ -21,7 +23,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -34,28 +35,17 @@ const (
 func main() {
 	godotenv.Load()
 
+	config := config.Load()
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	GatewayPort := os.Getenv("GATEWAY_SERVICE_PORT")
+	log := zerolog.New(os.Stderr)
 
-	authPort := os.Getenv("AUTH_SERVICE_PORT")
-	authHost := os.Getenv("AUTH_SERVICE_HOST")
-	authUrl := fmt.Sprintf("%s:%s", authHost, authPort)
+	authUrl := fmt.Sprintf("%s:%s", config.AuthHost, config.AuthPort)
 
-	mlPort := os.Getenv("ML_SERVICE_PORT")
-	mlHost := os.Getenv("ML_SERVICE_HOST")
-	mlUrl := fmt.Sprintf("%s:%s", mlHost, mlPort)
+	mlUrl := fmt.Sprintf("%s:%s", config.MLHost, config.MLPort)
 
-	minioHost := os.Getenv("MINIO_API_HOST")
-	minioPort := os.Getenv("MINIO_API_PORT")
-	minioEndpoint := fmt.Sprintf("%s:%s", minioHost, minioPort)
-	log.Info().Str("minio url", minioEndpoint)
-
-	minioAccessKeyID := os.Getenv("MINIO_ROOT_USER")
-	minioSecretAccessKey := os.Getenv("MINIO_ROOT_PASSWORD")
-	JwtKey := os.Getenv("JWT_SECRET_KEY")
-	JwtExpired := os.Getenv("JWT_EXPIRED")
-	bucketName := os.Getenv("MINIO_BUCKET_NAME")
+	minioEndpoint := fmt.Sprintf("%s:%s", config.MinioHost, config.MinioPort)
 
 	authConn, err := grpc.NewClient(authUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -75,14 +65,14 @@ func main() {
 	batchProcessorClient := pb.NewCVProcessorServiceClient(mlConn)
 
 	minioClient, err := minio.New(minioEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(minioAccessKeyID, minioSecretAccessKey, ""),
+		Creds:  credentials.NewStaticV4(config.MinioAccessKeyID, config.MinioSecretAccessKey, ""),
 		Secure: false,
 	})
 	if err != nil {
 		log.Fatal().Str("service", service).AnErr("failed to create a minio client", err)
 	}
 
-	jwtPkg, err := jwt.NewJwt(JwtKey, JwtExpired)
+	jwtPkg, err := jwt.NewJwt(config.JwtSecretKey, config.JwtExpired)
 	if err != nil {
 		log.Fatal().
 			Err(err).
@@ -94,15 +84,17 @@ func main() {
 	authUsecase := usecase.NewAuthClient(authClient)
 	authHandler := handler.NewAuthHandler(authUsecase)
 
-	batchProcessorUsecase := usecase.NewBatchPdfProcessing(minio, batchProcessorClient, bucketName)
+	batchProcessorUsecase := usecase.NewBatchPdfProcessing(minio, batchProcessorClient, config.MinioBucketName)
 	batchProcessorHandler := handler.NewBatchPdfProcessingHandler(batchProcessorUsecase)
 
-	middleware := middleware.NewMiddleware(jwtPkg)
+	middleware := middleware.NewMiddleware(jwtPkg, log)
 
 	mux := http.NewServeMux()
 
 	handler.AuthRoutes(mux, authHandler)
 	handler.BatchProcessingRoutes(mux, batchProcessorHandler, middleware)
+
+	mux.HandleFunc("/health-check", utils.HealthCheckHandler())
 
 	corsOptions := cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173"},
@@ -112,17 +104,18 @@ func main() {
 		MaxAge:           86400,
 	}
 
-	corsMiddleware := cors.New(corsOptions).Handler(mux)
+	wrappedHandler := cors.New(corsOptions).Handler(
+		middleware.LoggingMiddleware(middleware.RateLimiter(mux)))
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", GatewayPort),
-		Handler: corsMiddleware,
+		Addr:    fmt.Sprintf(":%s", config.GatewayPort),
+		Handler: wrappedHandler,
 	}
 
-	gs := gracefullyShutdown(server)
+	gs := gracefullyShutdown(server, log)
 
 	go func() {
-		log.Info().Msgf("%s running on %s", service, GatewayPort)
+		log.Info().Msgf("%s running on %s", service, config.GatewayPort)
 		if err := server.ListenAndServe(); err != nil {
 			log.Debug().AnErr("server error", err)
 			log.Fatal().Str("service", service).AnErr("failed to serve the server", err)
@@ -134,7 +127,7 @@ func main() {
 	log.Info().Msgf("%s exited gracfully", service)
 }
 
-func gracefullyShutdown(s *http.Server) func() {
+func gracefullyShutdown(s *http.Server, log zerolog.Logger) func() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
