@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -23,4 +24,29 @@ func GetUserIdFromContext(w http.ResponseWriter, r *http.Request) (string, error
 	}
 
 	return stringUserID, nil
+}
+
+func HealthCheckHandler() http.HandlerFunc {
+	type HealthStatus struct {
+		Status string `json:"status"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		status := HealthStatus{
+			Status: "healthy",
+		}
+
+		httpStatus := http.StatusOK
+		if status.Status != "healthy" {
+			httpStatus = http.StatusServiceUnavailable
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(httpStatus)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "health check",
+			"data":    status,
+		})
+	}
 }
