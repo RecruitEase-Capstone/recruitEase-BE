@@ -35,12 +35,12 @@ func (a *AuthRepository) CreateUser(ctx context.Context, user *model.User) error
 	result, err := a.db.ExecContext(ctx, InsertUserQuery,
 		user.ID, user.Name, user.Email, user.Password, user.UpdatedAt, user.UpdatedAt)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if rows != 1 {
