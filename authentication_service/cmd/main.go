@@ -22,7 +22,6 @@ import (
 	protovalidate_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -35,6 +34,8 @@ func main() {
 	godotenv.Load()
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	log := zerolog.New(os.Stderr)
 
 	AuthPort := fmt.Sprintf(":%s", os.Getenv("AUTH_SERVICE_PORT"))
 	JwtKey := os.Getenv("JWT_SECRET_KEY")
@@ -62,7 +63,7 @@ func main() {
 		log.Fatal().Err(err).Str("service", service).Msg("failed to initialize protovalidate")
 	}
 
-	logger, opts := log_utils.InterceptorLogger(zerolog.New(os.Stderr))
+	logger, opts := log_utils.InterceptorLogger(log)
 
 	protovalidateInterceptor := protovalidate_middleware.UnaryServerInterceptor(validator)
 
@@ -79,7 +80,7 @@ func main() {
 
 	pb.RegisterAuthenticationServiceServer(grpcServer, authHanlder)
 
-	gs := gracefullyShutdown(grpcServer)
+	gs := gracefullyShutdown(grpcServer, log)
 
 	go func() {
 		log.Info().Msgf("%s running on %s", service, AuthPort)
@@ -93,7 +94,7 @@ func main() {
 	log.Info().Msgf("%s exited gracefully", service)
 }
 
-func gracefullyShutdown(s *grpc.Server) func() {
+func gracefullyShutdown(s *grpc.Server, log zerolog.Logger) func() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
