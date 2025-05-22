@@ -25,6 +25,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+
       - name: Generate go.work
         run: |
           go work init ./authentication_service ./gateway ./pkg
@@ -38,11 +43,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ vars.DOCKER_USERNAME }}/authentication_service:latest
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.2'
 
       - name: Run unit tests
         run: go test ./...
