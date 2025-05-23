@@ -7,20 +7,20 @@ import (
 	pb "github.com/RecruitEase-Capstone/recruitEase-BE/pkg/proto/v1"
 )
 
-type IAuthClient interface {
+type IAuthUsecase interface {
 	UserRegister(ctx context.Context, req *model.RegisterRequest) (*model.RegisterResponse, error)
 	UserLogin(ctx context.Context, req *model.LoginRequest) (*model.LoginResponse, error)
 }
 
-type AuthClient struct {
+type AuthUsecase struct {
 	client pb.AuthenticationServiceClient
 }
 
-func NewAuthClient(client pb.AuthenticationServiceClient) IAuthClient {
-	return &AuthClient{client: client}
+func NewAuthUsecase(client pb.AuthenticationServiceClient) IAuthUsecase {
+	return &AuthUsecase{client: client}
 }
 
-func (a *AuthClient) UserRegister(ctx context.Context, req *model.RegisterRequest) (*model.RegisterResponse, error) {
+func (a *AuthUsecase) UserRegister(ctx context.Context, req *model.RegisterRequest) (*model.RegisterResponse, error) {
 	grpcResponse, err := a.client.UserRegister(ctx, &pb.RegisterRequest{
 		Name:            req.Name,
 		Email:           req.Email,
@@ -40,7 +40,7 @@ func (a *AuthClient) UserRegister(ctx context.Context, req *model.RegisterReques
 	}, nil
 }
 
-func (a *AuthClient) UserLogin(ctx context.Context, req *model.LoginRequest) (*model.LoginResponse, error) {
+func (a *AuthUsecase) UserLogin(ctx context.Context, req *model.LoginRequest) (*model.LoginResponse, error) {
 	grpcResponse, err := a.client.UserLogin(ctx, &pb.LoginRequest{
 		Email:    req.Email,
 		Password: req.Password,

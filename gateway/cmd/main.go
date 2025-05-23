@@ -81,7 +81,7 @@ func main() {
 
 	minio := minioUtils.NewMinio(minioClient)
 
-	authUsecase := usecase.NewAuthClient(authClient)
+	authUsecase := usecase.NewAuthUsecase(authClient)
 	authHandler := handler.NewAuthHandler(authUsecase)
 
 	batchProcessorUsecase := usecase.NewBatchPdfProcessing(minio, batchProcessorClient, config.MinioBucketName)
