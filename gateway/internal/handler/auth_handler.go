@@ -6,15 +6,15 @@ import (
 
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/model"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/usecase"
-	utils "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/error"
+	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/error"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/response"
 )
 
 type AuthHandler struct {
-	usecase usecase.IAuthClient
+	usecase usecase.IAuthUsecase
 }
 
-func NewAuthHandler(usecase usecase.IAuthClient) *AuthHandler {
+func NewAuthHandler(usecase usecase.IAuthUsecase) *AuthHandler {
 	return &AuthHandler{usecase: usecase}
 }
 
@@ -33,7 +33,7 @@ func (ah *AuthHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
 
 	res, err := ah.usecase.UserRegister(r.Context(), req)
 	if err != nil {
-		statusCode, msg := utils.GRPCErrorToHTTP(err)
+		statusCode, msg := customErr.GRPCErrorToHTTP(err)
 		response.FailedResponse(w, statusCode, msg, nil)
 		return
 	}
@@ -51,7 +51,7 @@ func (ah *AuthHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	res, err := ah.usecase.UserLogin(r.Context(), req)
 	if err != nil {
-		statusCode, msg := utils.GRPCErrorToHTTP(err)
+		statusCode, msg := customErr.GRPCErrorToHTTP(err)
 		response.FailedResponse(w, statusCode, msg, nil)
 		return
 	}

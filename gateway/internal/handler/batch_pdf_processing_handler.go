@@ -36,11 +36,6 @@ func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r 
 
 	userId, err := utils.GetUserIdFromContext(w, r)
 
-	if err := r.ParseMultipartForm(10); err != nil {
-		response.FailedResponse(w, http.StatusBadRequest, "file size exceeds 10 mb", nil)
-		return
-	}
-
 	file, fileHeader, err := r.FormFile("zipFile")
 	if err != nil {
 		return
@@ -48,6 +43,11 @@ func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r 
 
 	if !strings.HasSuffix(strings.ToLower(fileHeader.Filename), ".zip") {
 		response.FailedResponse(w, http.StatusBadRequest, "only zip file are accepted", nil)
+		return
+	}
+
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response.FailedResponse(w, http.StatusBadRequest, "file size exceeds 10 mb", nil)
 		return
 	}
 
