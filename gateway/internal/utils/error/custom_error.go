@@ -1,10 +1,15 @@
 package utils
 
 import (
+	"errors"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+var (
+	ErrFailedToUpload = errors.New("failed upload pdf to minio object storage")
 )
 
 func GRPCErrorToHTTP(err error) (int, string) {
