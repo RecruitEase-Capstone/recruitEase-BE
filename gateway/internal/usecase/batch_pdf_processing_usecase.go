@@ -18,8 +18,8 @@ import (
 )
 
 type IBatchPdfProcessingUsecase interface {
-	UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) (*model.CVSummarizeResponse, error)
-	FetchSummarizedPdfHistory(ctx context.Context, userId string) (*model.CVSummarizeResponse, error)
+	UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) ([]*model.CVSummarizeResponse, error)
+	FetchSummarizedPdfHistory(ctx context.Context, userId string) ([]*model.CVSummarizeResponse, error)
 }
 
 type BatchPdfProcessingUsecase struct {
@@ -34,7 +34,7 @@ func NewBatchPdfProcessing(minio minio.IMinio,
 	return &BatchPdfProcessingUsecase{minio: minio, client: client, bucketName: bucketName}
 }
 
-func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) (*model.CVSummarizeResponse, error) {
+func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipBytes []byte, userId string) ([]*model.CVSummarizeResponse, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipByte
 
 	grpcRes, err := bu.client.ProcessBatchPDF(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to process batch PDF via gRPC: %w", err)
 	}
 
 	res := bu.mappingGrpcResponse(grpcRes)
@@ -77,7 +77,7 @@ func (bu *BatchPdfProcessingUsecase) UnzipAndUpload(ctx context.Context, zipByte
 	return res, nil
 }
 
-func (bu *BatchPdfProcessingUsecase) FetchSummarizedPdfHistory(ctx context.Context, userId string) (*model.CVSummarizeResponse, error) {
+func (bu *BatchPdfProcessingUsecase) FetchSummarizedPdfHistory(ctx context.Context, userId string) ([]*model.CVSummarizeResponse, error) {
 	req := &pb.FetchSummarizedPdfHistoryRequest{
 		UserId: userId,
 	}
@@ -125,26 +125,31 @@ func (bu *BatchPdfProcessingUsecase) processPDF(ctx context.Context, zipFile *zi
 	}, nil
 }
 
-func (bu *BatchPdfProcessingUsecase) mappingGrpcResponse(res *pb.BatchPDFProcessResponse) *model.CVSummarizeResponse {
-	response := &model.CVSummarizeResponse{}
+func (bu *BatchPdfProcessingUsecase) mappingGrpcResponse(res *pb.BatchPDFProcessResponse) []*model.CVSummarizeResponse {
+	var listResponse []*model.CVSummarizeResponse
 
 	for _, pred := range res.Predictions {
 		if pred.Prediction == nil {
 			continue
 		}
-		response.Name = append(response.Name, pred.Prediction.Name...)
-		response.CollegeName = append(response.CollegeName, pred.Prediction.CollegeName...)
-		response.Degree = append(response.Degree, pred.Prediction.Degree...)
-		response.GraduationYear = append(response.GraduationYear, pred.Prediction.GraduationYear...)
-		response.YearsOfExperience = append(response.YearsOfExperience, pred.Prediction.YearsOfExperience...)
-		response.CompaniesWorkedAt = append(response.CompaniesWorkedAt, pred.Prediction.CompaniesWorkedAt...)
-		response.Designation = append(response.Designation, pred.Prediction.Designation...)
-		response.Skills = append(response.Skills, pred.Prediction.Skills...)
-		response.Location = append(response.Location, pred.Prediction.Location...)
-		response.EmailAddress = append(response.EmailAddress, pred.Prediction.EmailAddress...)
+
+		response := &model.CVSummarizeResponse{
+			Name:              pred.Prediction.Name,
+			CollegeName:       pred.Prediction.CollegeName,
+			Degree:            pred.Prediction.Degree,
+			GraduationYear:    pred.Prediction.GraduationYear,
+			YearsOfExperience: pred.Prediction.YearsOfExperience,
+			CompaniesWorkedAt: pred.Prediction.CompaniesWorkedAt,
+			Designation:       pred.Prediction.Designation,
+			Skills:            pred.Prediction.Skills,
+			Location:          pred.Prediction.Location,
+			EmailAddress:      pred.Prediction.EmailAddress,
+		}
+
+		listResponse = append(listResponse, response)
 	}
 
-	return response
+	return listResponse
 }
 
 func (bu *BatchPdfProcessingUsecase) generateUniqueFileName(originalName string) string {
