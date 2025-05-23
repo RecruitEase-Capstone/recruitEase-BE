@@ -108,8 +108,9 @@ func main() {
 		middleware.LoggingMiddleware(middleware.RateLimiter(mux)))
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", config.GatewayPort),
-		Handler: wrappedHandler,
+		Addr:              fmt.Sprintf(":%s", config.GatewayPort),
+		Handler:           wrappedHandler,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	gs := gracefullyShutdown(server, log)
