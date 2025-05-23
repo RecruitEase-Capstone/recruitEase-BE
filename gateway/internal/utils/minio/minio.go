@@ -2,10 +2,10 @@ package minio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 
+	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/error"
 	"github.com/minio/minio-go/v7"
 	"github.com/rs/zerolog/log"
 )
@@ -46,7 +46,7 @@ func (m *Minio) UploadPDF(ctx context.Context,
 		ContentType: "application/pdf",
 	})
 	if err != nil {
-		return minio.UploadInfo{}, errors.New("failed upload pdf to minio object storage")
+		return minio.UploadInfo{}, customErr.ErrFailedToUpload
 	}
 
 	return info, nil
