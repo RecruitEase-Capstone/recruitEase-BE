@@ -8,6 +8,7 @@ import (
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/middleware"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/usecase"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils"
+	customErr "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/error"
 	"github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/response"
 )
 
@@ -58,7 +59,8 @@ func (br *BatchPdfProcessingHandler) HandleBatchUpload(w http.ResponseWriter, r 
 
 	res, err := br.usecase.UnzipAndUpload(r.Context(), zipBytes, userId)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, "failed to unzip and upload batch pdf`s", err.Error())
+		statusCode, msg := customErr.GRPCErrorToHTTP(err)
+		response.FailedResponse(w, statusCode, msg, nil)
 		return
 	}
 
@@ -74,7 +76,8 @@ func (br *BatchPdfProcessingHandler) FetchSummarizedPdfHistory(w http.ResponseWr
 
 	res, err := br.usecase.FetchSummarizedPdfHistory(r.Context(), userId)
 	if err != nil {
-		response.FailedResponse(w, http.StatusInternalServerError, "failed to fetch summarized pdf history", err.Error())
+		statusCode, msg := customErr.GRPCErrorToHTTP(err)
+		response.FailedResponse(w, statusCode, msg, nil)
 		return
 	}
 
