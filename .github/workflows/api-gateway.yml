@@ -46,3 +46,8 @@ jobs:
 
       - name: Run unit tests
         run: go test ./gateway/...
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./gateway/...
