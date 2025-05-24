@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	customContext "github.com/RecruitEase-Capstone/recruitEase-BE/gateway/internal/utils/context"
@@ -44,9 +45,13 @@ func HealthCheckHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(httpStatus)
 
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"message": "health check",
 			"data":    status,
 		})
+		if err != nil {
+			log.Println("failed to write JSON response")
+
+		}
 	}
 }
