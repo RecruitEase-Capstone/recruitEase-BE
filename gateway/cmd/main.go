@@ -97,7 +97,7 @@ func main() {
 	mux.HandleFunc("/health-check", utils.HealthCheckHandler())
 
 	corsOptions := cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://10.34.100.121:5173"},
+		AllowedOrigins:   []string{"http://10.34.100.121:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With", "Origin"},
 		AllowCredentials: true,
